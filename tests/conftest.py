@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from typing import Any
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -49,11 +49,24 @@ def sample_graph() -> dict[str, Any]:
     }
 
 
+def _make_proposal_mock() -> MagicMock:
+    """Return a non-async mock whose .model_dump() returns a valid EnrichmentProposal dict."""
+    proposal = MagicMock()
+    proposal.model_dump.return_value = {
+        "proposed_attributes": {},
+        "proposed_relationships": [],
+        "reasoning": "Mock reasoning — no real LLM call",
+    }
+    return proposal
+
+
 @pytest.fixture
 def mock_llm() -> AsyncMock:
     llm = AsyncMock()
+    # complete() is called by guard contracts — return valid JSON string
     llm.complete = AsyncMock(return_value='{"passes": true, "reason": "Valid structure"}')
-    llm.complete_structured = AsyncMock()
+    # complete_structured() is called by ReasoningAgent; must return something with .model_dump()
+    llm.complete_structured = AsyncMock(return_value=_make_proposal_mock())
     return llm
 
 

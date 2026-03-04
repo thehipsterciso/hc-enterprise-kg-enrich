@@ -31,6 +31,7 @@ def provider(mock_client: AsyncMock):
     fake_openai = _make_fake_openai(mock_client)
     with patch.dict(sys.modules, {"openai": fake_openai}):
         import importlib
+
         import hckg_enrich.providers.openai_provider as mod
         importlib.reload(mod)
         prov = mod.OpenAIProvider(api_key="test-key")
@@ -81,6 +82,7 @@ async def test_complete_raises_on_empty_content(provider):
 def test_import_error_without_openai():
     with patch.dict(sys.modules, {"openai": None}):  # type: ignore[dict-item]
         import importlib
+
         import hckg_enrich.providers.openai_provider as mod
         importlib.reload(mod)
         with pytest.raises(ImportError, match="openai"):
