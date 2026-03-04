@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -29,7 +30,20 @@ class EnrichmentStats:
     skipped: int = 0
     blocked: int = 0
     errors: int = 0
+    relationships_added: int = 0
     changes: list[str] = field(default_factory=list)
+
+
+@dataclass
+class ProgressEvent:
+    """Emitted by enrich_all_streaming() to report pipeline progress."""
+
+    type: str  # "started" | "entity_started" | "entity_done" | "completed" | "error"
+    entity_id: str | None = None
+    total: int | None = None
+    completed: int | None = None
+    result: dict[str, Any] | None = None
+    stats: EnrichmentStats | None = None
 
 
 class EnrichmentController:
@@ -84,27 +98,68 @@ class EnrichmentController:
         limit: int | None = None,
     ) -> EnrichmentStats:
         """Enrich all (or filtered) entities with bounded concurrency."""
+        stats = EnrichmentStats()
+        async for event in self.enrich_all_streaming(entity_type=entity_type, limit=limit):
+            if event.type == "completed" and event.stats:
+                stats = event.stats
+        return stats
+
+    async def enrich_all_streaming(
+        self,
+        entity_type: str | None = None,
+        limit: int | None = None,
+    ) -> AsyncIterator[ProgressEvent]:
+        """Enrich entities and yield ProgressEvents as each completes.
+
+        Yields:
+            ProgressEvent(type="started", total=N)
+            ProgressEvent(type="entity_started", entity_id=..., completed=i, total=N)
+            ProgressEvent(type="entity_done",    entity_id=..., completed=i, total=N, result=...)
+            ProgressEvent(type="completed", stats=EnrichmentStats)
+        """
         entities: list[dict[str, Any]] = list(self._graph.get("entities", []))
         if entity_type:
             entities = [e for e in entities if e.get("entity_type") == entity_type]
         if limit:
             entities = entities[:limit]
 
-        stats = EnrichmentStats(total_entities=len(entities))
+        total = len(entities)
+        stats = EnrichmentStats(total_entities=total)
+        yield ProgressEvent(type="started", total=total)
+
         sem = asyncio.Semaphore(self._concurrency)
+        queue: asyncio.Queue[ProgressEvent] = asyncio.Queue()
 
         async def enrich_one(entity: dict[str, Any]) -> None:
+            eid = str(entity["id"])
             async with sem:
-                result = await self.enrich_entity(str(entity["id"]))
+                await queue.put(ProgressEvent(type="entity_started", entity_id=eid))
+                result = await self.enrich_entity(eid)
+                await queue.put(
+                    ProgressEvent(type="entity_done", entity_id=eid, result=result)
+                )
+
+        tasks = [asyncio.create_task(enrich_one(e)) for e in entities]
+        done_count = 0
+
+        while done_count < total:
+            event = await queue.get()
+            if event.type == "entity_done":
+                done_count += 1
+                result = event.result or {}
+                event.completed = done_count
+                event.total = total
                 if result.get("error"):
                     stats.errors += 1
                 elif result.get("applied"):
                     stats.enriched += 1
+                    stats.relationships_added += result.get("relationships_added", 0)
                     stats.changes.extend(result.get("changes", []))
                 elif result.get("reason") == "Blocked by GraphGuard":
                     stats.blocked += 1
                 else:
                     stats.skipped += 1
+            yield event
 
-        await asyncio.gather(*[enrich_one(e) for e in entities])
-        return stats
+        await asyncio.gather(*tasks)
+        yield ProgressEvent(type="completed", stats=stats)
