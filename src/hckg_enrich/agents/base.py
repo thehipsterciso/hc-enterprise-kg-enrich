@@ -17,6 +17,9 @@ class AgentRole(StrEnum):
     COHERENCE = "coherence"
     COMMIT = "commit"
     PRIORITIZATION = "prioritization"
+    DISCOVERY = "discovery"
+    ORG_RESEARCH = "org_research"
+    GAP_ANALYSIS = "gap_analysis"
 
 
 @dataclass

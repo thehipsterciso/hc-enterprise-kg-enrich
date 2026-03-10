@@ -96,6 +96,7 @@ class EnrichmentController:
         self._graph = graph
         self._concurrency = concurrency
         self._llm_model = llm_model
+        self._org_profile: dict | None = None  # set per-run by enrich_all_streaming
         self._llm_provider = llm_provider
         self._search_provider = search_provider
 
@@ -145,6 +146,7 @@ class EnrichmentController:
         start = time.monotonic()
         self._metrics.active_pipelines.inc()
 
+        org_profile = getattr(self, "_org_profile", None)
         msg = AgentMessage(
             sender=AgentRole.CONTEXT,
             recipient=AgentRole.CONTEXT,
@@ -153,6 +155,7 @@ class EnrichmentController:
                 "run_id": run_id,
                 "llm_model": self._llm_model,
                 "llm_provider": self._llm_provider,
+                **({"org_profile": org_profile} if org_profile else {}),
             },
         )
 
@@ -248,8 +251,16 @@ class EnrichmentController:
         entity_type: str | None = None,
         limit: int | None = None,
         graph_path: str = "",
+        entity_ids: list[str] | None = None,
+        org_profile: dict | None = None,
     ) -> EnrichmentRun:
         """Enrich all (or filtered) entities with bounded concurrency.
+
+        Args:
+            entity_ids: When provided, only enrich these specific entity IDs
+                (used by ConvergenceController to target gap-analysis priorities).
+            org_profile: When provided, thread OrgProfile dict through every
+                agent message payload for organisational grounding.
 
         Returns a completed EnrichmentRun with full session statistics.
         """
@@ -264,7 +275,8 @@ class EnrichmentController:
         )
         stats = EnrichmentStats()
         async for event in self.enrich_all_streaming(
-            entity_type=entity_type, limit=limit, run=run
+            entity_type=entity_type, limit=limit, run=run,
+            entity_ids=entity_ids, org_profile=org_profile,
         ):
             if event.type == "completed" and event.stats:
                 stats = event.stats
@@ -309,6 +321,8 @@ class EnrichmentController:
         entity_type: str | None = None,
         limit: int | None = None,
         run: EnrichmentRun | None = None,
+        entity_ids: list[str] | None = None,
+        org_profile: dict | None = None,
     ) -> AsyncIterator[ProgressEvent]:
         """Enrich entities and yield ProgressEvents as each completes.
 
@@ -318,9 +332,20 @@ class EnrichmentController:
             ProgressEvent(type="entity_done",    entity_id=..., completed=i, total=N, result=...)
             ProgressEvent(type="completed", stats=EnrichmentStats)
         """
+        # Store org_profile for threading through entity pipelines
+        self._org_profile = org_profile
+
         # Prioritize entities before the main loop
         entities: list[dict[str, Any]] = list(self._graph.get("entities", []))
         relationships: list[dict[str, Any]] = list(self._graph.get("relationships", []))
+
+        # Filter to specific entity IDs when provided by ConvergenceController
+        if entity_ids is not None:
+            id_set = set(entity_ids)
+            entities = [e for e in entities if str(e.get("id", "")) in id_set]
+            # Preserve the priority ordering from entity_ids
+            entity_order = {eid: i for i, eid in enumerate(entity_ids)}
+            entities.sort(key=lambda e: entity_order.get(str(e.get("id", "")), 9999))
 
         priority_msg = AgentMessage(
             sender=AgentRole.CONTEXT,

@@ -119,6 +119,8 @@ class CommitAgent(AbstractEnrichmentAgent):
                 "confidence_tier": confidence_tier,
                 "confidence_score": confidence_score,
                 "source_count": len(search_sources),
+                "source_urls": [s["url"] for s in search_sources if s.get("url")],
+                "search_queries": search_queries,
             }
         )
 
@@ -167,6 +169,7 @@ class CommitAgent(AbstractEnrichmentAgent):
                     "llm_model": llm_model,
                     "confidence_tier": confidence_tier,
                     "rationale": rel.get("rationale", ""),
+                    "source_urls": [s["url"] for s in search_sources if s.get("url")],
                 },
             }
             self._relationships.append(new_rel)

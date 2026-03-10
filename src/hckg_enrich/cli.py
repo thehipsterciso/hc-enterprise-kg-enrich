@@ -31,6 +31,19 @@ def main() -> None:
                        help="Path to write JSONL audit log (e.g. audit/run.jsonl)")
     run_p.add_argument("--metrics", dest="metrics_out",
                        help="Path to write Prometheus metrics text after run")
+    # Convergence / org-grounding flags (activates ConvergenceController)
+    run_p.add_argument("--ticker", dest="ticker",
+                       help="Stock exchange ticker to ground enrichment (e.g. AAPL, MSFT)")
+    run_p.add_argument("--org-name", dest="org_name",
+                       help="Organisation name (alternative to --ticker)")
+    run_p.add_argument("--industry", dest="industry",
+                       help="Industry vertical hint (e.g. 'financial services', 'healthcare')")
+    run_p.add_argument("--target-coverage", dest="target_coverage", type=float, default=0.80,
+                       help="KG completeness threshold to converge to (default: 0.80)")
+    run_p.add_argument("--max-iterations", dest="max_iterations", type=int, default=10,
+                       help="Maximum convergence iterations (default: 10)")
+    run_p.add_argument("--artifacts-dir", dest="artifacts_dir",
+                       help="Directory to store downloaded source document artifacts")
 
     # --- demo ---
     demo_p = sub.add_parser("demo", help="Generate a synthetic enterprise digital twin")
@@ -95,8 +108,6 @@ def _try_rich_progress(total: int) -> Any:
 # ---------------------------------------------------------------------------
 
 async def _run(args: Any) -> None:
-    from hckg_enrich.pipeline.controller import EnrichmentController, ProgressEvent
-
     graph_path = Path(args.graph)
     if not graph_path.exists():
         print(f"ERROR: {graph_path} not found", file=sys.stderr)
@@ -113,57 +124,99 @@ async def _run(args: Any) -> None:
         print(f"WARNING: graph schema_version={schema_ver!r} may be incompatible", file=sys.stderr)
     llm, search = _make_llm_and_search(getattr(args, "no_search", False))
 
-    controller = EnrichmentController(
-        graph=graph,
-        llm=llm,
-        search=search,
-        concurrency=getattr(args, "concurrency", 5),
-        audit_log_path=audit_log_path,
-    )
-
-    run = None
-
-    progress_ctx, _ = _try_rich_progress(len(graph.get("entities", [])))
-    if progress_ctx is not None:
-        from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn
-        with Progress(
-            TextColumn("[bold blue]{task.description}"),
-            BarColumn(),
-            TaskProgressColumn(),
-            TextColumn("{task.completed}/{task.total}"),
-        ) as prog:
-            task_id = prog.add_task(
-                "Enriching", total=len(graph.get("entities", []))
-            )
-            async for event in controller.enrich_all_streaming(
-                entity_type=getattr(args, "entity_type", None),
-                limit=getattr(args, "limit", None),
-            ):
-                if isinstance(event, ProgressEvent) and event.type == "entity_done":
-                    prog.advance(task_id)
-    else:
-        n_entities = len(graph.get("entities", []))
-        print(f"Enriching {n_entities} entities...")
-
-    run = await controller.enrich_all(
-        entity_type=getattr(args, "entity_type", None),
-        limit=getattr(args, "limit", None),
-        graph_path=str(graph_path),
-    )
-
+    ticker = getattr(args, "ticker", None)
+    org_name = getattr(args, "org_name", None)
     out_path = Path(args.out)
-    from hckg_enrich.io.file_safety import atomic_write_json
-    atomic_write_json(out_path, graph)
 
-    print(f"\nRun ID:  {run.run_id}")
-    print(f"Model:   {run.llm_model}")
-    print("Results:")
-    print(f"  Enriched:              {run.enriched_count}")
-    print(f"  Relationships added:   {run.relationships_added}")
-    print(f"  Blocked (GraphGuard):  {run.blocked_count}")
-    print(f"  Skipped:               {run.skipped_count}")
-    print(f"  Errors:                {run.error_count}")
-    print(f"  Output: {out_path}")
+    if ticker or org_name:
+        # ---- Convergence mode ----
+        from hckg_enrich.pipeline.convergence import ConvergenceController
+        identifier = ticker or org_name
+        print(
+            f"Convergence mode: {identifier} | "
+            f"target={args.target_coverage:.0%} | max-iter={args.max_iterations}"
+        )
+        conv = ConvergenceController(
+            graph=graph,
+            llm=llm,
+            search=search,
+            ticker=ticker,
+            org_name=org_name,
+            industry=getattr(args, "industry", None),
+            target_coverage=args.target_coverage,
+            max_iterations=args.max_iterations,
+            concurrency=getattr(args, "concurrency", 5),
+            audit_log_path=audit_log_path,
+            artifacts_dir=getattr(args, "artifacts_dir", None),
+        )
+        result = await conv.enrich_until_complete(graph_path=str(graph_path))
+
+        from hckg_enrich.io.file_safety import atomic_write_json
+        atomic_write_json(out_path, graph)
+
+        fr = result.final_report
+        print(f"\nConvergence: {result.stop_reason} in {result.iterations} iteration(s)")
+        print(f"  Final score:       {fr.overall_score:.2%}" if fr else "  Final score: N/A")
+        if fr:
+            print(f"  Layer coverage:    {fr.layer_coverage:.2%}")
+            print(f"  Field population:  {fr.field_population_rate:.2%}")
+            print(f"  Provenance quality:{fr.provenance_quality:.2%}")
+        print(f"  Entities enriched: {result.total_entities_enriched}")
+        print(f"  Entities discovered:{result.total_entities_discovered}")
+        print(f"  Relationships added:{result.total_relationships_added}")
+        print(f"  Duration:          {result.duration_seconds:.1f}s")
+        print(f"  Output: {out_path}")
+
+    else:
+        # ---- Single-pass mode (backwards-compatible) ----
+        from hckg_enrich.pipeline.controller import EnrichmentController, ProgressEvent
+
+        controller = EnrichmentController(
+            graph=graph,
+            llm=llm,
+            search=search,
+            concurrency=getattr(args, "concurrency", 5),
+            audit_log_path=audit_log_path,
+        )
+
+        progress_ctx, _ = _try_rich_progress(len(graph.get("entities", [])))
+        if progress_ctx is not None:
+            from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn
+            with Progress(
+                TextColumn("[bold blue]{task.description}"),
+                BarColumn(),
+                TaskProgressColumn(),
+                TextColumn("{task.completed}/{task.total}"),
+            ) as prog:
+                task_id = prog.add_task("Enriching", total=len(graph.get("entities", [])))
+                async for event in controller.enrich_all_streaming(
+                    entity_type=getattr(args, "entity_type", None),
+                    limit=getattr(args, "limit", None),
+                ):
+                    if isinstance(event, ProgressEvent) and event.type == "entity_done":
+                        prog.advance(task_id)
+        else:
+            n_entities = len(graph.get("entities", []))
+            print(f"Enriching {n_entities} entities...")
+
+        run = await controller.enrich_all(
+            entity_type=getattr(args, "entity_type", None),
+            limit=getattr(args, "limit", None),
+            graph_path=str(graph_path),
+        )
+
+        from hckg_enrich.io.file_safety import atomic_write_json
+        atomic_write_json(out_path, graph)
+
+        print(f"\nRun ID:  {run.run_id}")
+        print(f"Model:   {run.llm_model}")
+        print("Results:")
+        print(f"  Enriched:              {run.enriched_count}")
+        print(f"  Relationships added:   {run.relationships_added}")
+        print(f"  Blocked (GraphGuard):  {run.blocked_count}")
+        print(f"  Skipped:               {run.skipped_count}")
+        print(f"  Errors:                {run.error_count}")
+        print(f"  Output: {out_path}")
 
     # Optional: write Prometheus metrics
     metrics_out = getattr(args, "metrics_out", None)

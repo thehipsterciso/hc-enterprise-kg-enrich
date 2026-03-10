@@ -53,9 +53,10 @@ class SourceCitation:
     relevance_score: float = 1.0
     retrieved_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     search_query: str = ""
+    artifact_id: str | None = None  # Set when document stored as local artifact
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        d = {
             "url": self.url,
             "title": self.title,
             "snippet": self.snippet,
@@ -63,6 +64,9 @@ class SourceCitation:
             "retrieved_at": self.retrieved_at,
             "search_query": self.search_query,
         }
+        if self.artifact_id is not None:
+            d["artifact_id"] = self.artifact_id
+        return d
 
 
 @dataclass
