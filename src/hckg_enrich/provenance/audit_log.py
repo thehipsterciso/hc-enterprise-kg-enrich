@@ -48,12 +48,12 @@ class AuditEvent:
 
     # Actor
     agent_role: str = ""
-    pipeline_version: str = "0.3.0"
+    pipeline_version: str = "0.6.0"
     llm_model: str = ""
 
     # Change summary
     attribute_changes: list[str] = field(default_factory=list)
-    relationships_added: int = 0
+    relationships_added: list[dict[str, Any]] = field(default_factory=list)
 
     # Quality
     confidence_tier: str = "T4"
@@ -64,6 +64,7 @@ class AuditEvent:
     # Reasoning
     reasoning: str = ""
     search_source_count: int = 0
+    source_urls: list[str] = field(default_factory=list)
 
     # Error info
     error_message: str = ""
@@ -96,6 +97,7 @@ class AuditEvent:
                 "guard_blocking_failures": self.guard_blocking_failures,
                 "reasoning": self.reasoning,
                 "search_source_count": self.search_source_count,
+                "source_urls": self.source_urls,
                 "error_message": self.error_message,
                 "references_event_id": self.references_event_id,
                 "metadata": self.metadata,

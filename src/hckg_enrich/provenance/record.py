@@ -115,7 +115,7 @@ class ProvenanceRecord:
     entity_type: str = ""
 
     committed_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
-    pipeline_version: str = "0.3.0"
+    pipeline_version: str = "0.6.0"
     llm_model: str = ""
 
     # What changed

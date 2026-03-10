@@ -9,6 +9,7 @@ ticker cannot be resolved.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import UTC, datetime
 from typing import Any
@@ -87,19 +88,21 @@ class OrgResearchAgent:
         queries = self._build_queries(ticker, org_name)
         all_results: list[dict[str, Any]] = []
 
-        for query in queries:
+        async def _search_one(query: str) -> list[dict[str, Any]]:
             try:
-                results = await self._search.search(query, n=5)
-                for r in results:
-                    all_results.append({
-                        "url": r.url,
-                        "title": r.title,
-                        "snippet": r.snippet,
-                        "score": r.score,
-                        "query": query,
-                    })
+                results = await self._search.search(query, n=5)  # type: ignore[union-attr]
+                return [
+                    {"url": r.url, "title": r.title, "snippet": r.snippet,
+                     "score": r.score, "query": query}
+                    for r in results
+                ]
             except Exception as exc:
                 logger.warning("OrgResearchAgent search failed for %r: %s", query, exc)
+                return []
+
+        batches = await asyncio.gather(*(_search_one(q) for q in queries))
+        for batch in batches:
+            all_results.extend(batch)
 
         if not all_results:
             logger.warning("OrgResearchAgent: no search results for %s", identifier)

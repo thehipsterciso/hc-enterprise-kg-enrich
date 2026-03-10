@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-PIPELINE_VERSION = "0.3.0"
+PIPELINE_VERSION = "0.6.0"
 
 
 class CommitAgent(AbstractEnrichmentAgent):
@@ -128,16 +128,18 @@ class CommitAgent(AbstractEnrichmentAgent):
         rel_count = 0
         committed_rels: list[dict[str, Any]] = []
 
+        # Build case-insensitive name index once for efficient relationship target lookup
+        name_index: dict[str, dict[str, Any]] = {
+            str(e.get("name", "")).lower(): e for e in self._entities.values()
+        }
+
         for rel in proposal.get("proposed_relationships", []):
             target_name = str(rel.get("target_name", ""))
             rel_type = str(rel.get("relationship_type", ""))
             if not rel_type or not target_name:
                 continue
 
-            target_entity = next(
-                (e for e in self._entities.values() if e.get("name") == target_name),
-                None,
-            )
+            target_entity = name_index.get(target_name.lower())
             if target_entity is None:
                 logger.debug(
                     "Skipping proposed relationship %s → %r: target not found in graph",
@@ -155,19 +157,26 @@ class CommitAgent(AbstractEnrichmentAgent):
             if already_exists:
                 continue
 
+            # Relationships inherit entity tier with a slight downgrade:
+            # inferred edges are always one step less certain than the fact that drove them
+            _rel_tier_map = {"T1": "T2", "T2": "T2", "T3": "T3", "T4": "T4"}
+            rel_confidence_tier = _rel_tier_map.get(confidence_tier, "T3")
+            rel_confidence_score = max(0.0, confidence_score - 0.05)
+
             new_rel = {
                 "id": str(uuid.uuid4()),
                 "relationship_type": rel_type,
                 "source_id": entity_id,
                 "target_id": target_entity["id"],
                 "weight": 1.0,
-                "confidence": confidence_score,
+                "confidence": rel_confidence_score,
                 "provenance": {
                     "enriched_at": now,
                     "enriched_by": f"hckg-enrich/v{PIPELINE_VERSION}",
                     "run_id": run_id,
                     "llm_model": llm_model,
-                    "confidence_tier": confidence_tier,
+                    "confidence_tier": rel_confidence_tier,
+                    "confidence_score": rel_confidence_score,
                     "rationale": rel.get("rationale", ""),
                     "source_urls": [s["url"] for s in search_sources if s.get("url")],
                 },
@@ -277,6 +286,7 @@ class CommitAgent(AbstractEnrichmentAgent):
                 guard_blocking_failures=list(guard_report.get("blocking_failures", [])),
                 reasoning=reasoning,
                 search_source_count=len(search_sources),
+                source_urls=[s["url"] for s in search_sources if s.get("url")],
             )
             self._audit_log.append(event)
         except Exception as exc:

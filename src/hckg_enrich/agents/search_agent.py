@@ -95,6 +95,16 @@ class SearchAgent(AbstractEnrichmentAgent):
         payload["search_queries"] = queries
         payload["search_context"] = search_context
 
+        if not search_sources:
+            logger.error(
+                "SearchAgent: all queries failed for entity %s — "
+                "enrichment will proceed with no source grounding",
+                payload.get("entity_id", "unknown"),
+            )
+            payload["search_skipped"] = True
+        else:
+            payload["search_skipped"] = False
+
         return AgentMessage(
             sender=self.role,
             recipient=AgentRole.REASONING,

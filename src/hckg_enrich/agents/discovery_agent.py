@@ -93,19 +93,23 @@ class EntityDiscoveryAgent:
                     "EntityDiscoveryAgent failed for type %s: %s", entity_type, exc
                 )
 
-        # Append to graph, avoiding duplicate names
-        existing_names_lower = {
-            str(e.get("name", "")).lower()
+        # Append to graph, avoiding duplicates by (name, entity_type) pair
+        existing_keys: set[tuple[str, str]] = {
+            (str(e.get("name", "")).lower(), str(e.get("entity_type", "")).lower())
             for e in self._graph.get("entities", [])
         }
         added: list[dict[str, Any]] = []
         for stub in newly_created:
-            if stub["name"].lower() not in existing_names_lower:
+            key = (stub["name"].lower(), stub["entity_type"].lower())
+            if key not in existing_keys:
                 self._graph.setdefault("entities", []).append(stub)
-                existing_names_lower.add(stub["name"].lower())
+                existing_keys.add(key)
                 added.append(stub)
             else:
-                logger.debug("Skipping duplicate entity name: %s", stub["name"])
+                logger.debug(
+                    "Skipping duplicate entity (name=%s, type=%s)",
+                    stub["name"], stub["entity_type"],
+                )
 
         logger.info(
             "EntityDiscoveryAgent: created %d new entities across %d types",
