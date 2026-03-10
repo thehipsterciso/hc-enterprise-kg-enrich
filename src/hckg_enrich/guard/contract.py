@@ -19,12 +19,14 @@ class ContractResult:
         severity: ContractSeverity,
         message: str = "",
         entity_id: str = "",
+        details: dict[str, Any] | None = None,
     ) -> None:
         self.contract_id = contract_id
         self.passed = passed
         self.severity = severity
         self.message = message
         self.entity_id = entity_id
+        self.details = details
 
     def __repr__(self) -> str:
         status = "PASS" if self.passed else f"FAIL({self.severity})"

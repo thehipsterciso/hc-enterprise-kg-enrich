@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "hc-enterprise-kg-enrich"
-version = "0.3.0"
-description = "AI-powered enrichment pipeline for hc-enterprise-kg — LLM reasoning, web search grounding, and GraphGuard quality contracts"
+version = "0.5.0"
+description = "AI-powered enrichment pipeline for hc-enterprise-kg — 7-agent pipeline, provenance & audit trail, observability, 8 GraphGuard contracts, confidence tiers"
 authors = ["thehipsterciso"]
 readme = "README.md"
 packages = [{include = "hckg_enrich", from = "src"}]

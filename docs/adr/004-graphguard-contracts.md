@@ -22,6 +22,6 @@ Static rules like "Finance cannot report to HR" fail for edge cases and require 
 - `ERROR` — blocks the enrichment from being applied
 - `WARNING` — logged but does not block; enrichment is applied
 
-## Relation to hc-enterprise-kg guard module
+## Relation to hc-enterprise-kg
 
-The `guard/` module in `hc-enterprise-kg` contains scaffolding that was merged but never wired up. This package reimplements GraphGuard from scratch with LLM-based evaluation as a first-class design principle, not an afterthought.
+`hc-enterprise-kg` previously contained a `guard/` scaffolding module (removed in v0.32.0). `hc-enterprise-kg-enrich` is the canonical home for GraphGuard. The enrichment pipeline and all quality contracts live here exclusively.

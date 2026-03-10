@@ -13,8 +13,10 @@ class AgentRole(StrEnum):
     CONTEXT = "context"
     SEARCH = "search"
     REASONING = "reasoning"
+    CONFIDENCE = "confidence"
     COHERENCE = "coherence"
     COMMIT = "commit"
+    PRIORITIZATION = "prioritization"
 
 
 @dataclass

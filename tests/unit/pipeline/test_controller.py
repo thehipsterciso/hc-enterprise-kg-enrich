@@ -29,9 +29,9 @@ async def test_controller_enrich_all_counts_total(sample_graph: dict[str, Any]) 
     mock_llm.complete = AsyncMock(return_value='{"passes": true, "reason": "ok"}')
 
     controller = EnrichmentController(graph=sample_graph, llm=mock_llm, search=None)
-    stats = await controller.enrich_all()
-    assert stats.total_entities == len(sample_graph["entities"])
-    assert stats.errors == 0
+    run = await controller.enrich_all()
+    assert run.total_entities == len(sample_graph["entities"])
+    assert run.error_count == 0
 
 
 @pytest.mark.asyncio
@@ -41,8 +41,8 @@ async def test_controller_filters_by_entity_type(sample_graph: dict[str, Any]) -
     mock_llm.complete = AsyncMock(return_value='{"passes": true, "reason": "ok"}')
 
     controller = EnrichmentController(graph=sample_graph, llm=mock_llm, search=None)
-    stats = await controller.enrich_all(entity_type="department")
-    assert stats.total_entities == 2  # Finance + HR
+    run = await controller.enrich_all(entity_type="department")
+    assert run.total_entities == 2  # Finance + HR
 
 
 @pytest.mark.asyncio
@@ -52,8 +52,8 @@ async def test_controller_respects_limit(sample_graph: dict[str, Any]) -> None:
     mock_llm.complete = AsyncMock(return_value='{"passes": true, "reason": "ok"}')
 
     controller = EnrichmentController(graph=sample_graph, llm=mock_llm, search=None)
-    stats = await controller.enrich_all(limit=1)
-    assert stats.total_entities == 1
+    run = await controller.enrich_all(limit=1)
+    assert run.total_entities == 1
 
 
 @pytest.mark.asyncio
@@ -63,6 +63,6 @@ async def test_controller_blocked_by_guard(sample_graph: dict[str, Any]) -> None
     mock_llm.complete = AsyncMock(return_value='{"passes": false, "reason": "Invalid"}')
 
     controller = EnrichmentController(graph=sample_graph, llm=mock_llm, search=None)
-    stats = await controller.enrich_all()
-    assert stats.blocked > 0
-    assert stats.enriched == 0
+    run = await controller.enrich_all()
+    assert run.blocked_count > 0
+    assert run.enriched_count == 0

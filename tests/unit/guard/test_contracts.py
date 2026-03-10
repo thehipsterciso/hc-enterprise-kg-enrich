@@ -55,7 +55,7 @@ async def test_contract_handles_bad_llm_response(mock_llm: object) -> None:
     mock_llm.complete.return_value = "not json at all"  # type: ignore[union-attr]
     contract = OrgHierarchyContract(llm=mock_llm)  # type: ignore[arg-type]
     result = await contract.evaluate("dept-001", {}, "context")
-    assert result.passed  # defaults to pass on parse failure
+    assert not result.passed  # fail-closed: bad LLM response blocks (GG-006 security policy)
 
 
 @pytest.mark.asyncio

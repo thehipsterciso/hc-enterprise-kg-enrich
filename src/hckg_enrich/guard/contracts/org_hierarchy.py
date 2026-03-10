@@ -50,8 +50,8 @@ class OrgHierarchyContract(QualityContract):
             passes = bool(data.get("passes", True))
             reason = str(data.get("reason", ""))
         except Exception:
-            passes = True
-            reason = "Could not parse LLM response — defaulting to pass"
+            passes = False
+            reason = "Could not parse LLM response — failing closed (GG-006 security policy)"
 
         return ContractResult(
             contract_id=self.id,

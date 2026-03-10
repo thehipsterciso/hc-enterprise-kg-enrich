@@ -27,6 +27,10 @@ def main() -> None:
     run_p.add_argument("--concurrency", type=int, default=5)
     run_p.add_argument("--no-search", dest="no_search", action="store_true",
                        help="Disable web search grounding")
+    run_p.add_argument("--audit-log", dest="audit_log",
+                       help="Path to write JSONL audit log (e.g. audit/run.jsonl)")
+    run_p.add_argument("--metrics", dest="metrics_out",
+                       help="Path to write Prometheus metrics text after run")
 
     # --- demo ---
     demo_p = sub.add_parser("demo", help="Generate a synthetic enterprise digital twin")
@@ -98,7 +102,15 @@ async def _run(args: Any) -> None:
         print(f"ERROR: {graph_path} not found", file=sys.stderr)
         sys.exit(1)
 
+    audit_log_path = getattr(args, "audit_log", None)
+    if audit_log_path:
+        Path(audit_log_path).parent.mkdir(parents=True, exist_ok=True)
+        print(f"Audit log: {audit_log_path}")
+
     graph: dict[str, Any] = json.loads(graph_path.read_text())
+    schema_ver = graph.get("schema_version")
+    if schema_ver and not str(schema_ver).startswith("1."):
+        print(f"WARNING: graph schema_version={schema_ver!r} may be incompatible", file=sys.stderr)
     llm, search = _make_llm_and_search(getattr(args, "no_search", False))
 
     controller = EnrichmentController(
@@ -106,11 +118,12 @@ async def _run(args: Any) -> None:
         llm=llm,
         search=search,
         concurrency=getattr(args, "concurrency", 5),
+        audit_log_path=audit_log_path,
     )
 
-    progress_ctx, _ = _try_rich_progress(len(graph.get("entities", [])))
-    stats = None
+    run = None
 
+    progress_ctx, _ = _try_rich_progress(len(graph.get("entities", [])))
     if progress_ctx is not None:
         from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn
         with Progress(
@@ -128,27 +141,37 @@ async def _run(args: Any) -> None:
             ):
                 if isinstance(event, ProgressEvent) and event.type == "entity_done":
                     prog.advance(task_id)
-                elif isinstance(event, ProgressEvent) and event.type == "completed":
-                    stats = event.stats
     else:
         n_entities = len(graph.get("entities", []))
         print(f"Enriching {n_entities} entities...")
-        stats = await controller.enrich_all(
-            entity_type=getattr(args, "entity_type", None),
-            limit=getattr(args, "limit", None),
-        )
+
+    run = await controller.enrich_all(
+        entity_type=getattr(args, "entity_type", None),
+        limit=getattr(args, "limit", None),
+        graph_path=str(graph_path),
+    )
 
     out_path = Path(args.out)
-    out_path.write_text(json.dumps(graph, indent=2) + "\n")
+    from hckg_enrich.io.file_safety import atomic_write_json
+    atomic_write_json(out_path, graph)
 
-    if stats:
-        print("\nDone:")
-        print(f"  Enriched:              {stats.enriched}")
-        print(f"  Relationships added:   {stats.relationships_added}")
-        print(f"  Blocked (GraphGuard):  {stats.blocked}")
-        print(f"  Skipped:               {stats.skipped}")
-        print(f"  Errors:                {stats.errors}")
+    print(f"\nRun ID:  {run.run_id}")
+    print(f"Model:   {run.llm_model}")
+    print("Results:")
+    print(f"  Enriched:              {run.enriched_count}")
+    print(f"  Relationships added:   {run.relationships_added}")
+    print(f"  Blocked (GraphGuard):  {run.blocked_count}")
+    print(f"  Skipped:               {run.skipped_count}")
+    print(f"  Errors:                {run.error_count}")
     print(f"  Output: {out_path}")
+
+    # Optional: write Prometheus metrics
+    metrics_out = getattr(args, "metrics_out", None)
+    if metrics_out:
+        metrics_path = Path(metrics_out)
+        metrics_path.parent.mkdir(parents=True, exist_ok=True)
+        metrics_path.write_text(controller.metrics.to_prometheus())
+        print(f"  Metrics: {metrics_path}")
 
 
 # ---------------------------------------------------------------------------
@@ -173,7 +196,8 @@ async def _demo(args: Any) -> None:
     graph = await generator.generate()
 
     out_path = Path(args.out)
-    out_path.write_text(json.dumps(graph, indent=2) + "\n")
+    from hckg_enrich.io.file_safety import atomic_write_json
+    atomic_write_json(out_path, graph)
 
     entities = graph.get("entities", [])
     rels = graph.get("relationships", [])

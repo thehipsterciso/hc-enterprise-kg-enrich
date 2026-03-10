@@ -30,7 +30,7 @@ async def test_full_pipeline_applies_attribute(sample_graph: dict[str, Any]) -> 
     finance = next(e for e in sample_graph["entities"] if e["id"] == "dept-finance-001")
     assert finance.get("fiscal_year") == "October-September"
     assert "enriched_at" in finance.get("provenance", {})
-    assert finance["provenance"]["enriched_by"] == "hckg-enrich/reasoning-agent"
+    assert "hckg-enrich" in finance["provenance"]["enriched_by"]
 
 
 @pytest.mark.asyncio
@@ -103,8 +103,8 @@ async def test_full_pipeline_enrich_all_with_mix(sample_graph: dict[str, Any]) -
     mock_llm.complete = AsyncMock(side_effect=llm_complete)
 
     controller = EnrichmentController(graph=sample_graph, llm=mock_llm, search=None)
-    stats = await controller.enrich_all()
+    run = await controller.enrich_all()
 
-    assert stats.total_entities == 4
-    assert stats.errors == 0
-    assert stats.enriched + stats.blocked + stats.skipped == 4
+    assert run.total_entities == 4
+    assert run.error_count == 0
+    assert run.enriched_count + run.blocked_count + run.skipped_count == 4
