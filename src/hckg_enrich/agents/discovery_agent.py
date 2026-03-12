@@ -167,10 +167,12 @@ class EntityDiscoveryAgent:
         )
 
         try:
-            result: _DiscoveryResult = await self._llm.complete_structured(
-                [Message(role="user", content=prompt)],
-                schema=_DiscoveryResult,
-                system=DISCOVERY_SYSTEM,
+            result: _DiscoveryResult = _DiscoveryResult.model_validate(
+                (await self._llm.complete_structured(
+                    [Message(role="user", content=prompt)],
+                    schema=_DiscoveryResult,
+                    system=DISCOVERY_SYSTEM,
+                )).model_dump()
             )
         except Exception as exc:
             logger.warning("Discovery LLM extraction failed for %s: %s", entity_type, exc)

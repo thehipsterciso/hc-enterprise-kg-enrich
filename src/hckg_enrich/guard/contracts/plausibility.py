@@ -8,6 +8,7 @@ Absorbed from KARMA's AdversarialValidator.PLAUSIBILITY_BOUNDS (hc-enterprise-kg
 
 from __future__ import annotations
 
+import json
 import logging
 from typing import Any
 
@@ -87,9 +88,16 @@ class PlausibilityContract(QualityContract):
         self,
         entity_id: str,
         proposed_enrichments: dict[str, Any],
-        graph_context: dict[str, Any],
+        graph_context: str | dict[str, Any],
     ) -> ContractResult:
-        entities: list[dict[str, Any]] = graph_context.get("entities", [])
+        if isinstance(graph_context, str):
+            try:
+                _ctx: dict[str, Any] = json.loads(graph_context) if graph_context else {}
+            except (json.JSONDecodeError, ValueError):
+                _ctx = {}
+        else:
+            _ctx = graph_context
+        entities: list[dict[str, Any]] = _ctx.get("entities", [])
         entity = next((e for e in entities if e.get("id") == entity_id), None)
 
         if entity is None:

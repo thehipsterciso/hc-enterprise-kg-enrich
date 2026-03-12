@@ -327,10 +327,10 @@ async def _enrich_entity_async(
         stats = await ctrl.enrich_all(limit=1)
         graph["entities"] = others + [entity]  # restore order
     return {
-        "enriched": stats.enriched > 0,
+        "enriched": stats.enriched_count > 0,
         "relationships_added": stats.relationships_added,
-        "blocked": stats.blocked > 0,
-        "errors": stats.errors,
+        "blocked": stats.blocked_count > 0,
+        "errors": stats.error_count,
     }
 
 
@@ -352,11 +352,11 @@ async def _enrich_all_async(
     stats = await ctrl.enrich_all(entity_type=entity_type, limit=limit)
     return {
         "total_entities": stats.total_entities,
-        "enriched": stats.enriched,
+        "enriched": stats.enriched_count,
         "relationships_added": stats.relationships_added,
-        "blocked": stats.blocked,
-        "skipped": stats.skipped,
-        "errors": stats.errors,
+        "blocked": stats.blocked_count,
+        "skipped": stats.skipped_count,
+        "errors": stats.error_count,
     }
 
 

@@ -45,7 +45,7 @@ class QualityContract(ABC):
         self,
         entity_id: str,
         proposed_enrichments: dict[str, Any],
-        graph_context: str,
+        graph_context: Any,
     ) -> ContractResult:
         """Evaluate the contract against proposed enrichments."""
         ...

@@ -95,7 +95,7 @@ class EnrichmentController:
         self._graph = graph
         self._concurrency = concurrency
         self._llm_model = llm_model
-        self._org_profile: dict | None = None  # set per-run by enrich_all_streaming
+        self._org_profile: dict[str, Any] | None = None  # set per-run by enrich_all_streaming
         self._llm_provider = llm_provider
         self._search_provider = search_provider
 
@@ -251,7 +251,7 @@ class EnrichmentController:
         limit: int | None = None,
         graph_path: str = "",
         entity_ids: list[str] | None = None,
-        org_profile: dict | None = None,
+        org_profile: dict[str, Any] | None = None,
     ) -> EnrichmentRun:
         """Enrich all (or filtered) entities with bounded concurrency.
 
@@ -321,7 +321,7 @@ class EnrichmentController:
         limit: int | None = None,
         run: EnrichmentRun | None = None,
         entity_ids: list[str] | None = None,
-        org_profile: dict | None = None,
+        org_profile: dict[str, Any] | None = None,
     ) -> AsyncIterator[ProgressEvent]:
         """Enrich entities and yield ProgressEvents as each completes.
 

@@ -1,6 +1,8 @@
 """ReasoningAgent — LLM-powered enrichment proposal generation."""
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel
 
 from hckg_enrich.agents.base import AbstractEnrichmentAgent, AgentMessage, AgentRole
@@ -35,7 +37,7 @@ Return JSON with this exact structure:
 """
 
 
-def _build_system(org_profile: dict | None) -> str:
+def _build_system(org_profile: dict[str, Any] | None) -> str:
     """Inject org grounding into the system prompt when available."""
     if not org_profile:
         return _BASE_SYSTEM

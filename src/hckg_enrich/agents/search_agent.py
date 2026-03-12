@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from hckg_enrich.agents.base import AbstractEnrichmentAgent, AgentMessage, AgentRole
 from hckg_enrich.providers.base import SearchProvider
@@ -70,7 +71,7 @@ class SearchAgent(AbstractEnrichmentAgent):
 
         queries = self._build_queries(entity_name, entity_type, entity, org_context)
 
-        search_sources: list[dict] = []
+        search_sources: list[dict[str, Any]] = []
         for query in queries:
             try:
                 results = await self._search.search(query, n=3)
@@ -116,7 +117,7 @@ class SearchAgent(AbstractEnrichmentAgent):
         self,
         entity_name: str,
         entity_type: str,
-        entity: dict,
+        entity: dict[str, Any],
         org_context: str,
     ) -> list[str]:
         """Build up to 4 adaptive queries based on entity's empty high-value fields."""

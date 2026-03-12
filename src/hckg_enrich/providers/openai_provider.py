@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Any
+from typing import Any, cast
 
 from pydantic import BaseModel
 
@@ -42,7 +42,7 @@ class OpenAIProvider:
         response = await self._client.chat.completions.create(
             model=self._model,
             max_tokens=self._max_tokens,
-            messages=oai_messages,
+            messages=cast(Any, oai_messages),
         )
         raw = response.choices[0].message.content
         if raw is None:
@@ -69,7 +69,7 @@ class OpenAIProvider:
         response = await self._client.chat.completions.create(
             model=self._model,
             max_tokens=self._max_tokens,
-            messages=oai_messages,
+            messages=cast(Any, oai_messages),
             response_format={"type": "json_object"},
         )
         content = response.choices[0].message.content

@@ -110,10 +110,12 @@ class GapAnalysisAgent:
         prompt = self._build_prompt(report, org_profile, deterministic_gaps)
 
         try:
-            schema_result: _GapReportSchema = await self._llm.complete_structured(
-                [Message(role="user", content=prompt)],
-                schema=_GapReportSchema,
-                system=GAP_ANALYSIS_SYSTEM,
+            schema_result: _GapReportSchema = _GapReportSchema.model_validate(
+                (await self._llm.complete_structured(
+                    [Message(role="user", content=prompt)],
+                    schema=_GapReportSchema,
+                    system=GAP_ANALYSIS_SYSTEM,
+                )).model_dump()
             )
         except Exception as exc:
             logger.warning("GapAnalysisAgent LLM call failed: %s", exc)

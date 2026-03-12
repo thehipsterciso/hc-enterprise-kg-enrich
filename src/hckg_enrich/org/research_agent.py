@@ -126,10 +126,12 @@ class OrgResearchAgent:
         )
 
         try:
-            extracted: _ExtractedProfile = await self._llm.complete_structured(
-                [Message(role="user", content=prompt)],
-                schema=_ExtractedProfile,
-                system=EXTRACTION_SYSTEM,
+            extracted: _ExtractedProfile = _ExtractedProfile.model_validate(
+                (await self._llm.complete_structured(
+                    [Message(role="user", content=prompt)],
+                    schema=_ExtractedProfile,
+                    system=EXTRACTION_SYSTEM,
+                )).model_dump()
             )
         except Exception as exc:
             logger.warning("OrgResearchAgent LLM extraction failed: %s", exc)

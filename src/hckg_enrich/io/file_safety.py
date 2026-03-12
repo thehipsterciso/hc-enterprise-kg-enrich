@@ -95,6 +95,7 @@ class GraphFileLock:
         self.release()
 
     def _try_lock(self) -> None:
+        assert self._fd is not None
         if sys.platform == "win32":
             import msvcrt
             msvcrt.locking(self._fd, msvcrt.LK_NBLCK, 1)  # type: ignore[attr-defined]
@@ -104,6 +105,7 @@ class GraphFileLock:
             fcntl.flock(self._fd, flag)
 
     def _try_unlock(self) -> None:
+        assert self._fd is not None
         if sys.platform == "win32":
             import msvcrt
             msvcrt.locking(self._fd, msvcrt.LK_UNLCK, 1)  # type: ignore[attr-defined]

@@ -351,17 +351,17 @@ class EnrichmentMetrics:
             lines.append(f"# TYPE {hist.name} histogram")
             lines.extend(_histogram(hist))
 
-        for family in [
+        for hist_family in [
             self.agent_duration_seconds,
         ]:
-            for h in family.all_samples():
+            for h in hist_family.all_samples():
                 lines.extend(_histogram(h))
 
-        for family in [
+        for counter_family in [
             self.llm_calls_total, self.search_calls_total, self.llm_tokens_total,
             self.guard_evaluations_total, self.confidence_tier_total,
         ]:
-            for c in family.all_samples():
+            for c in counter_family.all_samples():
                 lines.append(_counter(c))
 
         return "\n".join(lines) + "\n"

@@ -85,7 +85,7 @@ class KGAdapter:
                 elif hasattr(entity, "__dict__"):
                     entities.append(dict(entity.__dict__))
                 else:
-                    entities.append(entity)  # type: ignore[arg-type]
+                    entities.append(entity)
         except Exception as exc:
             logger.warning("KGAdapter.to_dict: could not read entities: %s", exc)
 
@@ -96,7 +96,7 @@ class KGAdapter:
                 elif hasattr(rel, "__dict__"):
                     relationships.append(dict(rel.__dict__))
                 else:
-                    relationships.append(rel)  # type: ignore[arg-type]
+                    relationships.append(rel)
         except Exception as exc:
             logger.warning("KGAdapter.to_dict: could not read relationships: %s", exc)
 
