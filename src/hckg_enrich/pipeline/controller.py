@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 import time
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
@@ -41,9 +40,9 @@ from hckg_enrich.guard.contracts.vendor_relationship import VendorRelationshipCo
 from hckg_enrich.guard.guardian import EnrichmentGuardian
 from hckg_enrich.observability.metrics import EnrichmentMetrics
 from hckg_enrich.observability.tracer import EnrichmentTracer
-from hckg_enrich.providers.base import LLMProvider, SearchProvider
 from hckg_enrich.provenance.audit_log import AuditEvent, AuditEventType, AuditLog
 from hckg_enrich.provenance.run import EnrichmentRun
+from hckg_enrich.providers.base import LLMProvider, SearchProvider
 
 logger = logging.getLogger(__name__)
 

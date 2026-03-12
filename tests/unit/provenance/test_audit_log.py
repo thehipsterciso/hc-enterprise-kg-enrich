@@ -2,10 +2,7 @@
 from __future__ import annotations
 
 import json
-import tempfile
 from pathlib import Path
-
-import pytest
 
 from hckg_enrich.provenance.audit_log import AuditEvent, AuditEventType, AuditLog
 

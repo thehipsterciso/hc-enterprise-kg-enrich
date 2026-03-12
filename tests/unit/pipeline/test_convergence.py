@@ -10,7 +10,6 @@ from hckg_enrich.pipeline.convergence import ConvergenceController, ConvergenceR
 from hckg_enrich.provenance.run import EnrichmentRun
 from hckg_enrich.scoring.completeness import CompletenessReport
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -18,7 +17,9 @@ from hckg_enrich.scoring.completeness import CompletenessReport
 
 def _make_run(enriched: int = 2, rels: int = 1) -> EnrichmentRun:
     run = EnrichmentRun(graph_path="test.json")
-    run.complete(total=3, enriched=enriched, blocked=0, skipped=0, errors=0, relationships_added=rels)
+    run.complete(
+        total=3, enriched=enriched, blocked=0, skipped=0, errors=0, relationships_added=rels
+    )
     return run
 
 

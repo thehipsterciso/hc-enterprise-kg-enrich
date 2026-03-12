@@ -95,7 +95,9 @@ class EntityDiff:
             "before": self.before,
             "after": self.after,
             "added_fields": self.added_fields,
-            "changed_fields": {k: {"before": b, "after": a} for k, (b, a) in self.changed_fields.items()},
+            "changed_fields": {
+                k: {"before": b, "after": a} for k, (b, a) in self.changed_fields.items()
+            },
         }
 
 

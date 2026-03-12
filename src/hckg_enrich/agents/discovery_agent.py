@@ -18,7 +18,6 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
-from hckg_enrich.agents.base import AgentRole
 from hckg_enrich.providers.base import LLMProvider, Message, SearchProvider
 
 if TYPE_CHECKING:

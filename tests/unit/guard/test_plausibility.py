@@ -4,7 +4,7 @@ from __future__ import annotations
 import pytest
 
 from hckg_enrich.guard.contract import ContractSeverity
-from hckg_enrich.guard.contracts.plausibility import PlausibilityContract, PLAUSIBILITY_BOUNDS
+from hckg_enrich.guard.contracts.plausibility import PLAUSIBILITY_BOUNDS, PlausibilityContract
 
 
 @pytest.fixture
@@ -271,5 +271,8 @@ async def test_vendor_negative_spend_fails(contract):
 # ---------------------------------------------------------------------------
 
 def test_all_expected_entity_types_in_bounds():
-    expected = {"person", "system", "risk", "vulnerability", "department", "vendor", "control", "data_asset", "integration"}
+    expected = {
+        "person", "system", "risk", "vulnerability", "department",
+        "vendor", "control", "data_asset", "integration",
+    }
     assert expected.issubset(set(PLAUSIBILITY_BOUNDS.keys()))

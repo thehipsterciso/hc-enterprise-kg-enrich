@@ -5,12 +5,12 @@ import pytest
 
 from hckg_enrich.agents.base import AgentMessage, AgentRole
 from hckg_enrich.agents.prioritization_agent import (
+    HIGH_VALUE_FIELDS,
     PrioritizationAgent,
+    _connectivity_score,
     _missing_field_score,
     _staleness_score,
-    _connectivity_score,
     _type_weight,
-    HIGH_VALUE_FIELDS,
 )
 
 

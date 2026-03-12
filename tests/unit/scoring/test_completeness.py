@@ -1,13 +1,10 @@
 """Tests for KGCompletenessScorer — pure Python, no mocks needed."""
 from __future__ import annotations
 
-import pytest
-
 from hckg_enrich.org.profile import OrgProfile
 from hckg_enrich.scoring.completeness import (
     EXPECTED_LAYERS,
     KGCompletenessScorer,
-    CompletenessReport,
 )
 
 

@@ -55,7 +55,9 @@ class PersonRoleConsistencyContract(QualityContract):
 
     id = "person-role-consistency-001"
     severity = ContractSeverity.WARNING
-    description = "Person role assignments must be semantically consistent with seniority and department"
+    description = (
+        "Person role assignments must be semantically consistent with seniority and department"
+    )
 
     def __init__(self, llm: LLMProvider) -> None:
         self._llm = llm

@@ -6,14 +6,12 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from hckg_enrich.guard.contract import ContractSeverity
 from hckg_enrich.guard.contracts.circular_dependency import CircularDependencyContract
 from hckg_enrich.guard.contracts.data_asset_ownership import DataAssetOwnershipContract
 from hckg_enrich.guard.contracts.entity_deduplication import EntityDeduplicationContract
-from hckg_enrich.guard.contracts.person_role_consistency import PersonRoleConsistencyContract
 from hckg_enrich.guard.contracts.relationship_semantics import RelationshipTypeSemanticsContract
 from hckg_enrich.guard.guardian import EnrichmentGuardian
-from hckg_enrich.guard.contract import ContractSeverity
-
 
 # ---------------------------------------------------------------------------
 # CircularDependencyContract
@@ -113,7 +111,10 @@ async def test_dedup_near_duplicate_warns(dedup_contract):
         entity_id="ent-001",
         proposed_enrichments={
             "proposed_relationships": [
-                {"relationship_type": "supplied_by", "target_name": "Microsoft Azure Cloud Platform"}
+                {
+                    "relationship_type": "supplied_by",
+                    "target_name": "Microsoft Azure Cloud Platform",
+                }
             ],
             "existing_entities": [
                 {"name": "Microsoft Azure Cloud"},
@@ -175,7 +176,9 @@ async def test_data_asset_passes_on_valid_ownership():
 @pytest.mark.asyncio
 async def test_data_asset_blocked_on_violation():
     contract = DataAssetOwnershipContract(
-        llm=_make_llm('{"passes": false, "reason": "PII data owned by Sales — governance violation"}')
+        llm=_make_llm(
+            '{"passes": false, "reason": "PII data owned by Sales — governance violation"}'
+        )
     )
     result = await contract.evaluate(
         entity_id="da-001",
@@ -225,7 +228,11 @@ async def test_rel_semantics_valid_schema_passes():
         proposed_enrichments={
             "entity_type": "person",
             "proposed_relationships": [
-                {"relationship_type": "works_in", "target_name": "Finance", "target_type": "department"}
+                {
+                    "relationship_type": "works_in",
+                    "target_name": "Finance",
+                    "target_type": "department",
+                }
             ],
         },
         graph_context="",
@@ -242,7 +249,11 @@ async def test_rel_semantics_schema_violation_blocked():
             "entity_type": "system",
             "proposed_relationships": [
                 # works_in requires Person source, not System
-                {"relationship_type": "works_in", "target_name": "Finance", "target_type": "department"}
+                {
+                    "relationship_type": "works_in",
+                    "target_name": "Finance",
+                    "target_type": "department",
+                }
             ],
         },
         graph_context="",
@@ -316,7 +327,7 @@ async def test_guardian_runs_contracts_in_parallel():
 @pytest.mark.asyncio
 async def test_guardian_fail_closed_on_contract_exception():
     """A contract that throws should result in a FAIL, not a pass."""
-    from hckg_enrich.guard.contract import QualityContract, ContractSeverity
+    from hckg_enrich.guard.contract import ContractSeverity, QualityContract
 
     class ExplodingContract(QualityContract):
         id = "exploding-contract"

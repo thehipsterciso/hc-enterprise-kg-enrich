@@ -13,7 +13,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -105,9 +105,13 @@ class ArtifactStore:
                 response = await client.get(url, headers={"User-Agent": "hckg-enrich/0.6.0"})
                 response.raise_for_status()
 
-                content_header = response.headers.get("content-type", "text/html").split(";")[0].lower()
+                content_header = (
+                    response.headers.get("content-type", "text/html").split(";")[0].lower()
+                )
                 if content_header not in _FETCHABLE_CONTENT_TYPES:
-                    logger.debug("Skipping artifact for unsupported content-type %s: %s", content_header, url)
+                    logger.debug(
+                        "Skipping artifact for unsupported content-type %s: %s", content_header, url
+                    )
                     return None
 
                 content = response.content
@@ -144,7 +148,9 @@ class ArtifactStore:
         self._by_entity.setdefault(entity_id, []).append(artifact_id)
         self._write_index()
 
-        logger.info("Stored artifact %s (%d bytes) for entity %s", artifact_id, len(content), entity_id)
+        logger.info(
+            "Stored artifact %s (%d bytes) for entity %s", artifact_id, len(content), entity_id
+        )
         return artifact
 
     def get(self, artifact_id: str) -> EnrichmentArtifact | None:

@@ -6,7 +6,6 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from pydantic import BaseModel
 
-from hckg_enrich.org.profile import OrgProfile
 from hckg_enrich.scoring.completeness import CompletenessReport
 from hckg_enrich.scoring.gap_analysis import (
     FRAMEWORK_URLS,

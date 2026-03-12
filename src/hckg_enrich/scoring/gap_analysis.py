@@ -49,7 +49,8 @@ Prioritise: rank gaps 1 (highest impact) to N.
 
 class _GapItemSchema(BaseModel):
     priority: int
-    gap_type: str          # "missing_layer" | "low_density" | "no_provenance" | "missing_relationships" | "low_field_population"
+    # "missing_layer"|"low_density"|"no_provenance"|"missing_relationships"|"low_field_population"
+    gap_type: str
     entity_type: str = ""
     description: str
     recommended_action: str
@@ -193,17 +194,26 @@ class GapAnalysisAgent:
         if report.provenance_quality < 0.5:
             gaps.append({
                 "gap_type": "no_provenance",
-                "description": f"{len(report.entities_without_sources)} entities lack URL-backed sources",
-                "recommended_action": "Re-enrich these entities with search enabled to capture source URLs",
+                "description": (
+                    f"{len(report.entities_without_sources)} entities lack URL-backed sources"
+                ),
+                "recommended_action": (
+                    "Re-enrich these entities with search enabled to capture source URLs"
+                ),
                 "industry_basis": "Data trustworthiness requires traceable source citations",
             })
 
         if report.relationship_density < 0.5:
             gaps.append({
                 "gap_type": "low_density",
-                "description": f"Relationship density below enterprise benchmark (score={report.relationship_density:.2f})",
+                "description": (
+                    f"Relationship density below enterprise benchmark"
+                    f" (score={report.relationship_density:.2f})"
+                ),
                 "recommended_action": "Enrich entities with focus on relationship proposals",
-                "industry_basis": "Enterprise KGs require ≥2 relationships per entity for structural completeness",
+                "industry_basis": (
+                    "Enterprise KGs require ≥2 relationships per entity for structural completeness"
+                ),
             })
 
         return gaps
@@ -215,7 +225,9 @@ class GapAnalysisAgent:
         deterministic_gaps: list[dict[str, Any]],
     ) -> str:
         parts = ["## KG Completeness Report"]
-        parts.append(f"Overall score: {report.overall_score:.2%} (threshold: {report.threshold:.2%})")
+        parts.append(
+            f"Overall score: {report.overall_score:.2%} (threshold: {report.threshold:.2%})"
+        )
         parts.append(f"Layer coverage: {report.layer_coverage:.2%}")
         parts.append(f"Field population: {report.field_population_rate:.2%}")
         parts.append(f"Relationship density: {report.relationship_density:.2%}")
@@ -225,7 +237,9 @@ class GapAnalysisAgent:
         if report.missing_layers:
             parts.append(f"\nMissing layers: {', '.join(report.missing_layers)}")
         if report.required_layers_missing:
-            parts.append(f"Required missing (industry): {', '.join(report.required_layers_missing)}")
+            parts.append(
+                f"Required missing (industry): {', '.join(report.required_layers_missing)}"
+            )
         if report.underpopulated_layers:
             parts.append(f"Underpopulated: {', '.join(report.underpopulated_layers)}")
 

@@ -1,12 +1,9 @@
 """Tests for KGAdapter — bridge between KnowledgeGraph facade and enrich dict format."""
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import MagicMock
 
 from hckg_enrich.io.kg_adapter import KGAdapter
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -70,7 +67,8 @@ class TestToDictViaEngine:
 # ---------------------------------------------------------------------------
 
 def _fallback_kg():
-    """Return a MagicMock KG whose engine.export_dict() raises AttributeError (triggers fallback)."""
+    """Return a MagicMock KG whose engine.export_dict() raises AttributeError (triggers fallback).
+    """
     kg = MagicMock()
     kg.engine.export_dict.side_effect = AttributeError("no export_dict")
     return kg

@@ -171,7 +171,9 @@ class ConvergenceController:
             if report.passes_threshold:
                 stop_reason = "threshold_met"
                 converged = True
-                logger.info("Convergence threshold %.2f met at iteration %d", self._target_coverage, i)
+                logger.info(
+                    "Convergence threshold %.2f met at iteration %d", self._target_coverage, i
+                )
                 break
 
             if i > 1 and (report.overall_score - prev_score) < self._delta_threshold:

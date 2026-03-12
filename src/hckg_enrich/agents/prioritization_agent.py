@@ -20,7 +20,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
-from hckg_enrich.agents.base import AgentRole, AgentMessage, AbstractEnrichmentAgent
+from hckg_enrich.agents.base import AbstractEnrichmentAgent, AgentMessage, AgentRole
 
 logger = logging.getLogger(__name__)
 

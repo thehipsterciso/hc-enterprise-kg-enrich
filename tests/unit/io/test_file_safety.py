@@ -3,18 +3,15 @@ from __future__ import annotations
 
 import json
 import threading
-import time
-from pathlib import Path
 
 import pytest
 
 from hckg_enrich.io.file_safety import (
     GraphFileLock,
     LockTimeoutError,
+    _rotate_backups,  # private, tested directly
     atomic_write_json,
 )
-from hckg_enrich.io.file_safety import _rotate_backups  # private, tested directly
-
 
 # ---------------------------------------------------------------------------
 # _rotate_backups

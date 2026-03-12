@@ -2,14 +2,14 @@
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
-from pydantic import BaseModel
 
 import pytest
+from pydantic import BaseModel
 
 from hckg_enrich.agents.discovery_agent import EntityDiscoveryAgent
 from hckg_enrich.org.profile import OrgProfile
 from hckg_enrich.providers.base import SearchResult
-from hckg_enrich.scoring.gap_analysis import GapReport, GapItem
+from hckg_enrich.scoring.gap_analysis import GapReport
 
 
 def _gap_report(entity_types: list[str], entity_ids: list[str] | None = None) -> GapReport:

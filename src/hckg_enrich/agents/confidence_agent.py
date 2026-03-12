@@ -150,7 +150,7 @@ def _compute_confidence(signals: EvidenceSignals) -> tuple[float, str]:
         rationale_parts.append(f"+0.20 ({signals.source_count} sources)")
     elif signals.source_count == 2:
         score += 0.12
-        rationale_parts.append(f"+0.12 (2 sources)")
+        rationale_parts.append("+0.12 (2 sources)")
     elif signals.source_count == 1:
         score += 0.06
         rationale_parts.append("+0.06 (1 source)")

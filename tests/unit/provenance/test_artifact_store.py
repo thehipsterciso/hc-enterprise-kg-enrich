@@ -13,7 +13,6 @@ from hckg_enrich.provenance.artifact_store import (
     _ext_for_content_type,
 )
 
-
 # ---------------------------------------------------------------------------
 # EnrichmentArtifact
 # ---------------------------------------------------------------------------
@@ -89,7 +88,7 @@ class TestExtForContentType:
 
 class TestArtifactStoreInit:
     def test_creates_run_directory(self, tmp_path):
-        store = ArtifactStore(base_dir=tmp_path, run_id="run-001")
+        _store = ArtifactStore(base_dir=tmp_path, run_id="run-001")
         assert (tmp_path / "run-001").is_dir()
 
     def test_starts_empty(self, tmp_path):
@@ -166,7 +165,6 @@ def _make_mock_response(content: bytes, content_type: str = "text/html", status:
 
 def _mock_httpx(response: MagicMock):
     """Build a mock httpx module that returns the given response."""
-    import sys
     mock_httpx_module = MagicMock()
     mock_client = AsyncMock()
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -345,9 +343,9 @@ class TestArtifactStoreRetrieval:
         store = ArtifactStore(base_dir=tmp_path, run_id="run-001")
 
         with patch.dict("sys.modules", {"httpx": mock_httpx_module}):
-            a1 = await store.fetch_and_store(url="https://example.com/a", entity_id="ent-1")
-            a2 = await store.fetch_and_store(url="https://example.com/b", entity_id="ent-1")
-            a3 = await store.fetch_and_store(url="https://example.com/c", entity_id="ent-2")
+            _a1 = await store.fetch_and_store(url="https://example.com/a", entity_id="ent-1")
+            _a2 = await store.fetch_and_store(url="https://example.com/b", entity_id="ent-1")
+            _a3 = await store.fetch_and_store(url="https://example.com/c", entity_id="ent-2")
 
         ent1_artifacts = store.list_for_entity("ent-1")
         assert len(ent1_artifacts) == 2

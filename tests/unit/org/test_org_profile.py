@@ -1,8 +1,6 @@
 """Tests for OrgProfile dataclass."""
 from __future__ import annotations
 
-import pytest
-
 from hckg_enrich.org.profile import OrgProfile
 
 

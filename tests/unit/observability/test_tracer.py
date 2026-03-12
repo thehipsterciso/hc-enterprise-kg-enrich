@@ -1,12 +1,11 @@
 """Tests for EnrichmentTracer."""
 from __future__ import annotations
 
-import asyncio
 import json
 
 import pytest
 
-from hckg_enrich.observability.tracer import EnrichmentTracer, Span, SpanEvent
+from hckg_enrich.observability.tracer import EnrichmentTracer, Span
 
 
 @pytest.fixture

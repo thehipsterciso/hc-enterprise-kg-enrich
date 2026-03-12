@@ -7,10 +7,8 @@ from __future__ import annotations
 
 import threading
 import time
-from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any
-
 
 # ---------------------------------------------------------------------------
 # Primitive metric types
@@ -131,7 +129,7 @@ class LabeledCounterFamily:
                 self._counters[key] = Counter(
                     name=self.name,
                     help=self.help,
-                    labels=dict(zip(self.label_names, key)),
+                    labels=dict(zip(self.label_names, key, strict=False)),
                 )
         return self._counters[key]
 
@@ -165,7 +163,7 @@ class LabeledHistogramFamily:
                     name=self.name,
                     help=self.help,
                     buckets=self.buckets,
-                    labels=dict(zip(self.label_names, key)),
+                    labels=dict(zip(self.label_names, key, strict=False)),
                 )
         return self._histograms[key]
 
@@ -325,8 +323,12 @@ class EnrichmentMetrics:
             out = []
             snap = h.snapshot()
             for le, cnt in snap["buckets"].items():
-                le_str = f'+Inf' if le == float("inf") else str(le)
-                out.append(f'{h.name}_bucket{{{("," if label_str else "") if label_str else ""}le="{le_str}"{(("," + label_str) if label_str else "")}}}{cnt}')
+                le_str = '+Inf' if le == float("inf") else str(le)
+                sep = "," if label_str else ""
+                suffix = ("," + label_str) if label_str else ""
+                out.append(
+                    f'{h.name}_bucket{{{sep}le="{le_str}"{suffix}}}{cnt}'
+                )
             out.append(f"{h.name}_sum{prefix} {snap['sum']}")
             out.append(f"{h.name}_count{prefix} {snap['count']}")
             return out

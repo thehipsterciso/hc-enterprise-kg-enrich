@@ -6,10 +6,9 @@ import pytest
 from hckg_enrich.agents.base import AgentMessage, AgentRole
 from hckg_enrich.agents.confidence_agent import (
     ConfidenceAgent,
-    _compute_confidence,
-    _extract_signals,
-    _score_to_tier,
     EvidenceSignals,
+    _compute_confidence,
+    _score_to_tier,
 )
 from hckg_enrich.provenance.record import ConfidenceTier
 
